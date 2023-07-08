@@ -6,11 +6,12 @@ defmodule Fizzbuzz do
   end
 
   def reply(n) do
-    case {rem(n, 3), rem(n, 5)} do
-      {0, 0} -> "FizzBuzz\n"
-      {0, _} -> "Fizz\n"
-      {_, 0} -> "Buzz\n"
-      {_, _} -> "#{n}\n"
+    result = case {rem(n, 3), rem(n, 5)} do
+      {0, 0} -> "FizzBuzz"
+      {0, _} -> "Fizz"
+      {_, 0} -> "Buzz"
+      {_, _} -> Integer.to_string(n)
     end
+    [result, "\n"]
   end
 end
