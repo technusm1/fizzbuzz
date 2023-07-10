@@ -5,12 +5,8 @@ defmodule Fizzbuzz do
     |> Enum.into([])
   end
 
-  def reply(n) do
-    case {rem(n, 3), rem(n, 5)} do
-      {0, 0} -> "FizzBuzz\n"
-      {0, _} -> "Fizz\n"
-      {_, 0} -> "Buzz\n"
-      {_, _} -> [Integer.to_string(n), "\n"]
-    end
-  end
+  def reply(n) when rem(n, 15) == 0, do: <<70, 105, 122, 122, 66, 117, 122, 122, 10>>
+  def reply(n) when rem(n, 3) == 0, do: <<70, 105, 122, 122, 10>>
+  def reply(n) when rem(n, 5) == 0, do: <<66, 117, 122, 122, 10>>
+  def reply(n), do: [Integer.to_string(n), <<10>>]
 end
