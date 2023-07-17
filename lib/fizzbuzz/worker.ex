@@ -18,11 +18,12 @@ defmodule Fizzbuzz.Worker do
     else
       Fizzbuzz.fizzbuzz_no_io(range)
     end
-    {:noreply, res}
+
+    {:noreply, res |> :erlang.iolist_to_binary}
   end
 
   def handle_call(:print, _from, results) do
-    results |> Enum.into(IO.binstream)
+    IO.binwrite(results)
     {:reply, :ok, []}
   end
 end
