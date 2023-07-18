@@ -1,15 +1,15 @@
 defmodule Fizzbuzz.Cli do
+  @range_size 12000
   def main([lower, upper]) do
     {lower, upper} = {String.to_integer(lower), String.to_integer(upper)}
-    chunk_size = min(div(upper - lower, System.schedulers_online()), 6000)
+    chunk_size = min(div(upper - lower, System.schedulers_online()), @range_size)
 
-    if chunk_size == 6000 do
+    if chunk_size == @range_size do
       # We'll divide the input range into 3 parts: beginning, 6k ranges and ending
       # beginning and ending will be processed before and after stream.run respectively.
       input_lower =
         case rem(lower, 15) do
-          1 ->
-            lower
+          1 -> lower
 
           0 ->
             IO.binwrite("FizzBuzz\n")
@@ -21,7 +21,7 @@ defmodule Fizzbuzz.Cli do
         end
 
       input_upper =
-        case rem(upper - input_lower + 1, 6000) do
+        case rem(upper - input_lower + 1, @range_size) do
           0 -> upper
           remainder -> upper - remainder
         end
@@ -29,8 +29,8 @@ defmodule Fizzbuzz.Cli do
       input_enumerable = Chunk6kStream.create(input_lower..input_upper)
 
       Task.async_stream(
-        input_enumerable,
-        fn input -> elem(GenServer.start_link(Fizzbuzz.Worker, [input]), 1) end,
+        input_enumerable |> Stream.chunk_every(100),
+        fn input -> elem(GenServer.start_link(Fizzbuzz.Worker, input), 1) end,
         timeout: :infinity
       )
       |> Stream.map(fn {:ok, res} -> res end)
@@ -48,7 +48,7 @@ defmodule Fizzbuzz.Cli do
 
       Task.async_stream(
         input_enumerable,
-        fn input -> elem(GenServer.start_link(Fizzbuzz.Worker, [input]), 1) end,
+        fn input -> elem(GenServer.start_link(Fizzbuzz.Worker, input), 1) end,
         timeout: :infinity
       )
       |> Stream.map(fn {:ok, res} -> res end)
@@ -73,6 +73,7 @@ defmodule Fizzbuzz.Cli do
 end
 
 defmodule Chunk6kStream do
+  @range_size 12000
   # Make sure that range has size of multiples of 6000 and range.first is divisible by 15
   def create(range) do
     Stream.resource(fn -> initialize(range) end, &generate_next_value/1, &done/1)
@@ -87,7 +88,7 @@ defmodule Chunk6kStream do
   end
 
   defp generate_next_value({range, lower, upper}) do
-    {[lower..(lower + 5999)], {range, lower + 6000, upper}}
+    {[lower..(lower + @range_size - 1)], {range, lower + @range_size, upper}}
   end
 
   defp done(_) do
