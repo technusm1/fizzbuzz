@@ -3,28 +3,23 @@ defmodule Fizzbuzz.Worker do
   use GenServer
 
   def init(range_list) do
-    # IO.inspect(range_list)
     send(self(), {:calculate, range_list})
     {:ok, []}
   end
 
   def handle_info({:calculate, range_list}, _state) do
-    result =
-      # Enum.reverse(range_list)
-      # |> Enum.reduce([], fn (elem, acc) -> [process_range(elem) | acc] end)
-      range_list |> Stream.map(&process_range/1) |> Enum.into([])
+    result = range_list |> Stream.map(&process_range/1) |> Enum.into([])
     {:noreply, result}
   end
 
   def handle_call(:print, _from, results) do
-    # results |> Enum.into(IO.binstream)
     IO.binwrite(results)
     {:reply, :ok, []}
   end
 
-  defp process_range(range) do
+  defp process_range(range = lower.._upper) do
     res = if Range.size(range) == @range_size do
-      i = range.first - 1
+      i = lower - 1
       0..(div(@range_size, 60) - 1)
       |> Stream.map(fn j ->
         [
@@ -82,7 +77,7 @@ defmodule Fizzbuzz.Worker do
           "FizzBuzz\n"
         ]
       end)
-      |> Stream.chunk_every(div(@range_size, 60) + 100)
+      |> Stream.chunk_every(div(@range_size, 60) + 50)
       |> Enum.into([])
     else
       Fizzbuzz.fizzbuzz_no_io(range)
