@@ -1,5 +1,5 @@
 defmodule Fizzbuzz.Cli do
-  @range_size 12000
+  @range_size 15000
   def main([lower, upper]) do
     {lower, upper} = {String.to_integer(lower), String.to_integer(upper)}
     chunk_size = min(div(upper - lower, System.schedulers_online()), @range_size)
@@ -73,7 +73,7 @@ defmodule Fizzbuzz.Cli do
 end
 
 defmodule Chunk6kStream do
-  @range_size 12000
+  @range_size 15000
   # Make sure that range has size of multiples of 6000 and range.first is divisible by 15
   def create(range) do
     Stream.resource(fn -> initialize(range) end, &generate_next_value/1, &done/1)
