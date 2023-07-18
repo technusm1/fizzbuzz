@@ -16,8 +16,7 @@ defmodule Fizzbuzz.Worker do
   end
 
   def handle_call(:print, _from, results) do
-    results |> Enum.into(IO.binstream)
-    # IO.binwrite(results)
+    IO.binwrite(results)
     {:reply, :ok, []}
   end
 
