@@ -6,4 +6,4 @@ To benchmark:
 - Use the command `MIX_ENV=prod mix escript.build` to build the executable.
 - Use the command `./fizzbuzz 1 1000000000 | pv > /dev/null` to benchmark.
 
-**Current speed on my system**: 225 MiB/s
+**Current speed on my system**: 320 MiB/s
