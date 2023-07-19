@@ -80,15 +80,15 @@ defmodule Chunk6kStream do
   end
 
   defp initialize(range) do
-    {range, range.first, range.last}
+    {range, range.first - 1, range.last}
   end
 
-  defp generate_next_value({range, lower, upper}) when lower == upper + 1 do
+  defp generate_next_value({range, upper, upper}) do
     {:halt, {range, upper, upper}}
   end
 
   defp generate_next_value({range, lower, upper}) do
-    {[lower..(lower + @range_size - 1)], {range, lower + @range_size, upper}}
+    {[(lower + 1)..(lower + @range_size)], {range, lower + @range_size, upper}}
   end
 
   defp done(_) do
