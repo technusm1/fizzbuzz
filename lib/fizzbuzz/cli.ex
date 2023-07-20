@@ -30,7 +30,7 @@ defmodule Fizzbuzz.Cli do
       input_enumerable = Chunk6kStream.create(input_lower..input_upper)
 
       Task.async_stream(
-        input_enumerable |> Stream.chunk_every(250),
+        input_enumerable |> Stream.chunk_every(400),
         fn input -> elem(GenServer.start_link(Fizzbuzz.Worker, input), 1) end,
         timeout: :infinity
       )
