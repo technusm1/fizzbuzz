@@ -13,14 +13,21 @@ defmodule Fizzbuzz.Worker do
   end
 
   def handle_call(:print, _from, results) do
-    IO.binwrite(results)
+    # /dev/stdout is UNIX only, so this won't work on windows
+    case :os.type() do
+      {:unix, _} ->
+        {:ok, io_device} = :file.open("/dev/stdout", [:append, :raw])
+        :ok = :file.write(io_device, results)
+        :file.close(io_device)
+      _ -> IO.binwrite(results)
+    end
     {:reply, :ok, []}
   end
 
   defp process_range(range = lower.._upper) do
     res = if Range.size(range) == @range_size do
       i = lower - 1
-      0..(div(@range_size, 60) - 1)
+      0..(div(@range_size, 15) - 1)
       |> Stream.map(fn j ->
         [
           Integer.to_string(15 * j + 1 + i), "\n",
@@ -35,49 +42,10 @@ defmodule Fizzbuzz.Worker do
           "Fizz\n",
           Integer.to_string(15 * j + 13 + i), "\n",
           Integer.to_string(15 * j + 14 + i), "\n",
-          "FizzBuzz\n",
-          Integer.to_string(15 * j + 16 + i), "\n",
-          Integer.to_string(15 * j + 17 + i), "\n",
-          "Fizz\n",
-          Integer.to_string(15 * j + 19 + i), "\n",
-          "Buzz\nFizz\n",
-          Integer.to_string(15 * j + 22 + i), "\n",
-          Integer.to_string(15 * j + 23 + i), "\n",
-          "Fizz\nBuzz\n",
-          Integer.to_string(15 * j + 26 + i), "\n",
-          "Fizz\n",
-          Integer.to_string(15 * j + 28 + i), "\n",
-          Integer.to_string(15 * j + 29 + i), "\n",
-          "FizzBuzz\n",
-          Integer.to_string(15 * j + 31 + i), "\n",
-          Integer.to_string(15 * j + 32 + i), "\n",
-          "Fizz\n",
-          Integer.to_string(15 * j + 34 + i), "\n",
-          "Buzz\nFizz\n",
-          Integer.to_string(15 * j + 37 + i), "\n",
-          Integer.to_string(15 * j + 38 + i), "\n",
-          "Fizz\nBuzz\n",
-          Integer.to_string(15 * j + 41 + i), "\n",
-          "Fizz\n",
-          Integer.to_string(15 * j + 43 + i), "\n",
-          Integer.to_string(15 * j + 44 + i), "\n",
-          "FizzBuzz\n",
-          Integer.to_string(15 * j + 46 + i), "\n",
-          Integer.to_string(15 * j + 47 + i), "\n",
-          "Fizz\n",
-          Integer.to_string(15 * j + 49 + i), "\n",
-          "Buzz\nFizz\n",
-          Integer.to_string(15 * j + 52 + i), "\n",
-          Integer.to_string(15 * j + 53 + i), "\n",
-          "Fizz\nBuzz\n",
-          Integer.to_string(15 * j + 56 + i), "\n",
-          "Fizz\n",
-          Integer.to_string(15 * j + 58 + i), "\n",
-          Integer.to_string(15 * j + 59 + i), "\n",
           "FizzBuzz\n"
         ]
       end)
-      |> Stream.chunk_every(div(@range_size, 60) + 50)
+      |> Stream.chunk_every(div(@range_size, 15) + 50)
       |> Enum.into([])
     else
       Fizzbuzz.fizzbuzz_no_io(range)

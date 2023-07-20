@@ -3,6 +3,7 @@ defmodule Fizzbuzz.Cli do
   def main([lower, upper]) do
     {lower, upper} = {String.to_integer(lower), String.to_integer(upper)}
     chunk_size = min(div(upper - lower, System.schedulers_online()), @range_size)
+    # {:ok, io_device} = :file.open("/dev/stdout", [:append, {:delayed_write, Size, Delay}])
 
     if chunk_size == @range_size do
       # We'll divide the input range into 3 parts: beginning, 6k ranges and ending
@@ -35,6 +36,7 @@ defmodule Fizzbuzz.Cli do
       )
       |> Stream.map(fn {:ok, res} -> res end)
       |> Stream.each(fn pid ->
+        # GenServer.call(pid, {:print, io_device})
         GenServer.call(pid, :print)
         Process.exit(pid, :kill)
       end)
@@ -53,14 +55,24 @@ defmodule Fizzbuzz.Cli do
       )
       |> Stream.map(fn {:ok, res} -> res end)
       |> Stream.each(fn pid ->
+        # GenServer.call(pid, {:print, io_device})
         GenServer.call(pid, :print)
         Process.exit(pid, :kill)
       end)
       |> Stream.run()
     end
+
+    # :file.close(io_device)
   end
 
   def main(_), do: IO.puts("Usage: fizzbuzz 1 10000")
+
+  defp wait_for_process_to_finish(pid) do
+    if Process.alive?(pid) do
+      Process.sleep(100)
+      wait_for_process_to_finish(pid)
+    end
+  end
 
   defp get_input_ranges2(lower, upper, chunk_size) do
     # Need to make this streamable
