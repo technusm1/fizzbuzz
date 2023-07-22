@@ -3,24 +3,17 @@ defmodule Fizzbuzz.Worker do
   use GenServer
 
   def init(range_list) do
-    send(self(), {:calculate, range_list})
-    {:ok, []}
+    {:ok, nil, {:continue, {:calculate, range_list}}}
   end
 
-  def handle_info({:calculate, range_list}, _state) do
+  def handle_continue({:calculate, range_list}, _state) do
     result = range_list |> Stream.map(&process_range/1) |> Enum.into([])
     {:noreply, result}
   end
 
-  def handle_call(:print, _from, results) do
-    # /dev/stdout is UNIX only, so this won't work on windows
-    case :os.type() do
-      {:unix, _} ->
-        {:ok, io_device} = :file.open("/dev/stdout", [:append, :raw])
-        :ok = :file.write(io_device, results)
-        :file.close(io_device)
-      _ -> IO.binwrite(results)
-    end
+  def handle_call({:print, port}, {pid, _}, results) do
+    send(port, {self(), {:command, results}})
+    send(port, {self(), {:connect, pid}})
     {:reply, :ok, []}
   end
 
