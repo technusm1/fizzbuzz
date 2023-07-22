@@ -4,6 +4,7 @@ defmodule Fizzbuzz.Cli do
     {lower, upper} = {String.to_integer(lower), String.to_integer(upper)}
     chunk_size = min(div(upper - lower, System.schedulers_online()), @range_size)
     # {:ok, io_device} = :file.open("/dev/stdout", [:append, {:delayed_write, Size, Delay}])
+    port = :erlang.open_port({:fd, 0, 1}, [:binary, :out])
 
     if chunk_size == @range_size do
       # We'll divide the input range into 3 parts: beginning, 6k ranges and ending
@@ -13,11 +14,13 @@ defmodule Fizzbuzz.Cli do
           1 -> lower
 
           0 ->
-            IO.binwrite("FizzBuzz\n")
+            # IO.binwrite("FizzBuzz\n")
+            send(port, {self(), {:command, "FizzBuzz\n"}})
             lower + 1
 
           remainder ->
-            IO.binwrite(Fizzbuzz.fizzbuzz_no_io(lower..(15 - remainder + lower)))
+            # IO.binwrite(Fizzbuzz.fizzbuzz_no_io(lower..(15 - remainder + lower)))
+            send(port, {self(), {:command, Fizzbuzz.fizzbuzz_no_io(lower..(15 - remainder + lower))}})
             15 - remainder + lower + 1
         end
 
@@ -37,7 +40,8 @@ defmodule Fizzbuzz.Cli do
       |> Stream.map(fn {:ok, res} -> res end)
       |> Stream.each(fn pid ->
         # GenServer.call(pid, {:print, io_device})
-        GenServer.call(pid, :print)
+        send(port, {self(), {:connect, pid}})
+        GenServer.call(pid, {:print, port})
         Process.exit(pid, :kill)
       end)
       |> Stream.run()
@@ -56,12 +60,14 @@ defmodule Fizzbuzz.Cli do
       |> Stream.map(fn {:ok, res} -> res end)
       |> Stream.each(fn pid ->
         # GenServer.call(pid, {:print, io_device})
-        GenServer.call(pid, :print)
+        send(port, {self(), {:connect, pid}})
+        GenServer.call(pid, {:print, port})
         Process.exit(pid, :kill)
       end)
       |> Stream.run()
     end
 
+    send(port, {self(), :close})
     # :file.close(io_device)
   end
 
