@@ -1,9 +1,8 @@
 defmodule Fizzbuzz.Cli do
-  @range_size 15000
+  @range_size 600000
   def main([lower, upper]) do
     {lower, upper} = {String.to_integer(lower), String.to_integer(upper)}
     chunk_size = min(div(upper - lower, System.schedulers_online()), @range_size)
-    # {:ok, io_device} = :file.open("/dev/stdout", [:append, {:delayed_write, Size, Delay}])
     port = :erlang.open_port({:fd, 0, 1}, [:binary, :out])
 
     if chunk_size == @range_size do
@@ -14,12 +13,10 @@ defmodule Fizzbuzz.Cli do
           1 -> lower
 
           0 ->
-            # IO.binwrite("FizzBuzz\n")
             send(port, {self(), {:command, "FizzBuzz\n"}})
             lower + 1
 
           remainder ->
-            # IO.binwrite(Fizzbuzz.fizzbuzz_no_io(lower..(15 - remainder + lower)))
             send(port, {self(), {:command, Fizzbuzz.fizzbuzz_no_io(lower..(15 - remainder + lower))}})
             15 - remainder + lower + 1
         end
@@ -30,16 +27,15 @@ defmodule Fizzbuzz.Cli do
           remainder -> upper - remainder
         end
 
-      input_enumerable = Chunk6kStream.create(input_lower..input_upper)
+      input_enumerable = New6kStream.create(input_lower..input_upper)
 
       Task.async_stream(
-        input_enumerable |> Stream.chunk_every(400),
-        fn input -> elem(GenServer.start_link(Fizzbuzz.Worker, input), 1) end,
+        input_enumerable,
+        fn input -> elem(GenServer.start_link(Fizzbuzz.Worker, [input]), 1) end,
         timeout: :infinity
       )
       |> Stream.map(fn {:ok, res} -> res end)
       |> Stream.each(fn pid ->
-        # GenServer.call(pid, {:print, io_device})
         send(port, {self(), {:connect, pid}})
         GenServer.call(pid, {:print, port})
         Process.exit(pid, :kill)
@@ -47,7 +43,7 @@ defmodule Fizzbuzz.Cli do
       |> Stream.run()
 
       if input_upper < upper do
-        IO.binwrite(Fizzbuzz.fizzbuzz_no_io(input_upper+1..upper))
+        send(port, {self(), {:command, Fizzbuzz.fizzbuzz_no_io(input_upper+1..upper)}})
       end
     else
       input_enumerable = get_input_ranges2(lower, upper, chunk_size)
@@ -59,7 +55,6 @@ defmodule Fizzbuzz.Cli do
       )
       |> Stream.map(fn {:ok, res} -> res end)
       |> Stream.each(fn pid ->
-        # GenServer.call(pid, {:print, io_device})
         send(port, {self(), {:connect, pid}})
         GenServer.call(pid, {:print, port})
         Process.exit(pid, :kill)
@@ -68,17 +63,9 @@ defmodule Fizzbuzz.Cli do
     end
 
     send(port, {self(), :close})
-    # :file.close(io_device)
   end
 
   def main(_), do: IO.puts("Usage: fizzbuzz 1 10000")
-
-  defp wait_for_process_to_finish(pid) do
-    if Process.alive?(pid) do
-      Process.sleep(100)
-      wait_for_process_to_finish(pid)
-    end
-  end
 
   defp get_input_ranges2(lower, upper, chunk_size) do
     # Need to make this streamable
@@ -90,27 +77,15 @@ defmodule Fizzbuzz.Cli do
   end
 end
 
-defmodule Chunk6kStream do
-  @range_size 15000
-  # Make sure that range has size of multiples of 6000 and range.first is divisible by 15
-  def create(range) do
-    Stream.resource(fn -> initialize(range) end, &generate_next_value/1, &done/1)
-  end
+defmodule New6kStream do
+  @range_size 600000
 
-  defp initialize(range) do
-    {range, range.first - 1, range.last}
-  end
-
-  defp generate_next_value({range, upper, upper}) do
-    {:halt, {range, upper, upper}}
-  end
-
-  defp generate_next_value({range, lower, upper}) do
-    {[(lower + 1)..(lower + @range_size)], {range, lower + @range_size, upper}}
-  end
-
-  defp done(_) do
-    nil
+  def create(lower..upper) do
+    end_range = (upper + 1)..(upper + @range_size)
+    Stream.unfold(lower..(lower + @range_size - 1), fn
+      ^end_range -> nil
+       n -> {n, n.last + 1..(n.last + @range_size)}
+    end)
   end
 end
 
