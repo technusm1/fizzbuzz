@@ -1,5 +1,7 @@
 # Fizzbuzz in Elixir
 
+Inspired from the following CodeGolf thread: https://codegolf.stackexchange.com/questions/215216/high-throughput-fizz-buzz/236630#236630
+
 To benchmark:
 - Make sure your have Elixir installed on your system (latest edition will do).
 - Checkout the project.
